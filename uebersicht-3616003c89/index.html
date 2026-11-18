@@ -1,0 +1,53 @@
+<!doctype html><html lang="de-CH"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Wartung – Gesamtübersicht</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f5f4;color:#1c1f1e;font:16px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+.hero{background:#191919;color:#fff;border-radius:12px;padding:26px 28px;display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;border-bottom:4px solid #ff6a1a}
+.hero h1{font:400 30px/1.1 Georgia,serif;margin:0}.sub{color:#ffb38a;font-size:14px;margin:6px 0 0}
+.sum{display:flex;gap:10px;flex-wrap:wrap}.pill{background:#2a2a2a;border-radius:999px;padding:6px 14px;font-size:14px}.pill b{font-size:18px;margin-right:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:18px}
+.c{background:#fff;border:1px solid #e1e4e2;border-top:4px solid #ccc;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.c.ok{border-top-color:#1a7f4b}.c.warn{border-top-color:#d48a00}.c.bad{border-top-color:#b3261e}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.top h2{font:400 22px/1.2 Georgia,serif;margin:0}
+.badge{font-size:13px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.badge.ok{background:#e3f3ea;color:#1a7f4b}.badge.warn{background:#fdf0d8;color:#8a5a00}.badge.bad{background:#fbe3e1;color:#b3261e}.badge.na{background:#eee;color:#667}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.kv div{background:#f6f7f6;border-radius:8px;padding:8px 10px}.kv p{margin:0}.kv .k{font-size:12px;color:#667}.kv .v{font:400 20px/1.2 Georgia,serif}
+.spark{height:34px}.note{color:#556;font-size:14px;margin:0}.meta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#667;margin-top:auto}
+.meta a{color:#1c1f1e;font-weight:600;text-decoration:none;border-bottom:2px solid #ff6a1a}
+.stale{color:#b3261e;font-weight:600}.msg{color:#667;font-size:14px}.foot{margin-top:28px;text-align:center;color:#889;font-size:13px}svg{display:block;width:100%;height:100%}</style></head>
+<body><div class="wrap">
+<div class="hero"><div><h1>Wartung – Gesamtübersicht</h1><p class="sub" id="sub">wird geladen …</p></div><div class="sum" id="sum"></div></div>
+<div class="grid" id="grid"></div>
+<p class="foot">Intern · Daten aus den wöchentlichen Wartungsläufen · Seite lädt bei jedem Aufruf den aktuellen Stand</p></div>
+<script>
+// Neue Kunden: hier eine Zeile ergänzen (Ordner im Repository, Anzeigename).
+const SITES=[
+ {dir:"sabix-265cce3007",name:"sabix.ch"},
+ {dir:"newimmohouse-59266d88c0",name:"newimmohouse.ch"},
+];
+const STALE_DAYS=8;
+const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const D=s=>{const[y,m,d]=s.split('-');return d+'.'+m+'.'+y};
+const ST=s=>({'In Ordnung':'ok','Achtung':'warn','Fehler':'bad'}[s]||'na');
+const age=s=>Math.floor((Date.now()-new Date(s+'T08:00:00'))/864e5);
+function spark(runs){const p=runs.filter(r=>r.resp_ms!=null).slice(-12);if(p.length<2)return'';
+ const W=200,H=34,mx=Math.max(...p.map(r=>r.resp_ms))*1.1,mn=0,x=i=>4+(W-8)*i/(p.length-1),y=v=>H-3-(H-6)*(v-mn)/(mx-mn||1);
+ return`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${p.map((r,i)=>x(i)+','+y(r.resp_ms)).join(' ')}" fill="none" stroke="#25a8c6" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}
+function card(s,runs){
+ if(!runs||!runs.length)return`<div class="c"><div class="top"><h2>${E(s.name)}</h2><span class="badge na">Keine Daten</span></div><p class="msg">Bericht konnte nicht geladen werden.</p><div class="meta"><span></span><a href="../${s.dir}/" target="_blank">Kundenbericht ↗</a></div></div>`;
+ runs.sort((a,b)=>a.date.localeCompare(b.date));const l=runs.at(-1),a=age(l.date),cls=ST(l.status);
+ return`<div class="c ${cls}"><div class="top"><h2>${E(s.name)}</h2><span class="badge ${cls}">${E(l.status)}</span></div>
+ <div class="kv"><div><p class="k">Seiten OK</p><p class="v">${l.pages_ok}/${l.pages_total}</p></div><div><p class="k">Defekte Links</p><p class="v">${l.links_broken}</p></div><div><p class="k">Antwort</p><p class="v">${l.resp_ms} <small style="font:12px system-ui">ms</small></p></div>
+ <div><p class="k">Formular</p><p class="v">${E(l.form)}</p></div><div><p class="k">Backup</p><p class="v">${E(l.backup||'—')}</p></div><div><p class="k">Läufe</p><p class="v">${runs.length}</p></div></div>
+ <div class="spark">${spark(runs)}</div><p class="note">${E(l.client_note)}</p>
+ <div class="meta"><span class="${a>STALE_DAYS?'stale':''}">Stand ${D(l.date)}${a>STALE_DAYS?' · überfällig':''}</span><a href="../${s.dir}/" target="_blank">Kundenbericht ↗</a></div></div>`}
+Promise.all(SITES.map(s=>fetch('../'+s.dir+'/data.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null))).then(all=>{
+ const order={bad:0,warn:1,na:2,ok:3};
+ const items=SITES.map((s,i)=>({s,runs:all[i],cls:all[i]&&all[i].length?ST([...all[i]].sort((a,b)=>a.date.localeCompare(b.date)).at(-1).status):'na'}));
+ items.sort((a,b)=>order[a.cls]-order[b.cls]||a.s.name.localeCompare(b.s.name));
+ $('#grid').innerHTML=items.map(i=>card(i.s,i.runs)).join('');
+ const n=k=>items.filter(i=>i.cls===k).length;
+ $('#sum').innerHTML=`<span class="pill"><b>${n('ok')}</b>In Ordnung</span><span class="pill"><b>${n('warn')}</b>Achtung</span><span class="pill"><b>${n('bad')}</b>Fehler</span>`;
+ const last=all.flat().filter(Boolean).map(r=>r.date).sort().at(-1);
+ $('#sub').textContent=SITES.length+' Websites'+(last?' · letzter Lauf '+D(last):'');
+});
+</script></body></html>
