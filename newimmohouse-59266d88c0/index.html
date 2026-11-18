@@ -1,0 +1,49 @@
+<!doctype html><html lang="de-CH"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Wartungsbericht newimmohouse.ch</title><style>*{box-sizing:border-box}body{margin:0;background:#f4f5f4;color:#1c1f1e;font:16px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 48px}
+.hero{background:var(--hero);color:#fff;border-radius:12px;padding:26px 28px;display:flex;flex-wrap:wrap;gap:20px 32px;align-items:center;justify-content:space-between;border-bottom:4px solid var(--acc)}
+.wm{line-height:.95;font-weight:500;font-size:30px;letter-spacing:-.015em}.wm span{display:block}.logo{height:44px;width:auto;display:block}
+.hd{text-align:right}.hd h1{font:400 28px/1.15 Georgia,serif;margin:0}.sub{color:var(--acc);font-size:14px;margin:6px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.tile{background:#fff;border:1px solid #e1e4e2;border-top:3px solid var(--line);border-radius:12px;padding:14px 16px}
+.tile .k{font-size:13px;color:#667;margin:0 0 6px}.tile .v{font:400 28px/1.1 Georgia,serif;margin:0}.tile small{font:400 13px system-ui;color:#667}
+h2{font-size:18px;font-weight:600;margin:32px 0 10px}
+.card{background:#fff;border:1px solid #e1e4e2;border-left:3px solid var(--acc);border-radius:12px;padding:18px 20px}
+.scroll{overflow-x:auto;background:#fff;border:1px solid #e1e4e2;border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:15px}th{text-align:left;font-weight:600;color:#667;font-size:13px;padding:10px;border-bottom:1px solid #e1e4e2;white-space:nowrap}
+td{padding:10px;border-bottom:1px solid #eef0ee;vertical-align:top}td.n{text-align:right}td.t{min-width:240px;color:#556}tr:last-child td{border-bottom:0}
+.ok{color:#1a7f4b;font-weight:600}.warn{color:#b26a00;font-weight:600}.bad{color:#b3261e;font-weight:600}
+.note{color:#667;font-size:13px;margin:8px 0 0}.foot{margin-top:32px;text-align:center}svg{width:100%;height:auto;display:block}
+@media print{body{background:#fff}.hero,.tile{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head>
+<body style="--hero:#13362C;--acc:#D9F8CE;--line:#4E8B6E"><div class="wrap">
+<div class="hero"><div class="wm"><span>new</span><span>immohouse</span></div><div class="hd"><h1>Wartungsbericht</h1><p class="sub" id="sub">newimmohouse.ch</p></div></div>
+<p id="msg" class="note">Bericht wird geladen …</p>
+<div id="content" hidden><div class="tiles" id="tiles"></div>
+<h2>Zusammenfassung</h2><div class="card" id="note"></div>
+<h2>Antwortzeit im Verlauf</h2><div class="card"><div id="chart"></div><p class="note">Antwortzeit = Mittelwert der Serverantwort über alle geprüften Unterseiten, gemessen von aussen. Tiefer ist besser.</p></div>
+<h2>Alle Wartungsläufe</h2><div class="scroll"><table><thead id="head"></thead><tbody id="rows"></tbody></table></div></div>
+<p class="note foot">Automatische Wartung und Überwachung</p></div>
+<script>const NAME="newimmohouse.ch",LINE="#4E8B6E";
+const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const D=s=>{const[y,m,d]=s.split('-');return d+'.'+m+'.'+y};
+const ST=s=>({'In Ordnung':'ok','Achtung':'warn','Fehler':'bad'}[s]||'');
+function chart(runs,color){const p=runs.filter(r=>r.resp_ms!=null);if(!p.length)return"<p class='note'>Noch keine Messwerte.</p>";
+const W=900,H=260,L=52,R=24,T=20,B=34;const ymax=Math.max(...p.map(r=>r.resp_ms))*1.25||1;
+let step=Math.pow(10,String(Math.floor(ymax)).length)/10;for(const k of[1,2,2.5,5,10]){if(ymax/(step*k)<=4){step*=k;break}}
+const ticks=[];for(let t=0;t<=ymax*1.0001;t+=step)ticks.push(t);const top=Math.max(ticks[ticks.length-1],ymax);
+const x=i=>L+(W-L-R)*(i+.5)/p.length,y=v=>H-B-(H-B-T)*v/top;
+let o=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Antwortzeit im Verlauf">`;
+for(const t of ticks)o+=`<line x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}" stroke="#e6e9e7"/><text x="${L-8}" y="${y(t)+4}" text-anchor="end" font-size="13" fill="#667">${Math.round(t)}</text>`;
+if(p.length>1)o+=`<polyline points="${p.map((r,i)=>x(i)+','+y(r.resp_ms)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+p.forEach((r,i)=>{o+=`<circle cx="${x(i)}" cy="${y(r.resp_ms)}" r="5" fill="${color}"><title>${D(r.date)}: ${r.resp_ms} ms</title></circle><text x="${x(i)}" y="${y(r.resp_ms)-11}" text-anchor="middle" font-size="13" fill="#445">${r.resp_ms}</text><text x="${x(i)}" y="${H-10}" text-anchor="middle" font-size="13" fill="#667">${D(r.date)}</text>`});
+return o+'</svg>'}
+function render(runs){runs.sort((a,b)=>a.date.localeCompare(b.date));const l=runs[runs.length-1];const hb=runs.some(r=>r.backup);
+const tile=(k,v,x='')=>`<div class="tile"><p class="k">${k}</p><p class="v">${v}${x}</p></div>`;
+$('#sub').innerHTML=NAME+' · Stand: <b>'+D(l.date)+'</b>';
+$('#tiles').innerHTML=tile('Status',`<span class="${ST(l.status)}">${E(l.status)}</span>`)+tile('Unterseiten erreichbar',l.pages_ok,` <small>von ${l.pages_total}</small>`)+tile('Defekte Links',l.links_broken)+tile('Kontaktformular',E(l.form))+tile('Antwortzeit',l.resp_ms,' <small>ms</small>');
+$('#note').textContent=l.client_note;$('#chart').innerHTML=chart(runs,LINE);
+$('#head').innerHTML='<tr><th>Datum</th><th>Status</th><th>Unterseiten OK</th><th>Defekte Links</th><th>Kontaktformular</th><th>Antwortzeit (ms)</th>'+(hb?'<th>Backup</th>':'')+'<th>Zusammenfassung</th></tr>';
+$('#rows').innerHTML=[...runs].reverse().map(r=>`<tr><td>${D(r.date)}</td><td class="${ST(r.status)}">${E(r.status)}</td><td class="n">${r.pages_ok}</td><td class="n">${r.links_broken}</td><td>${E(r.form)}</td><td class="n">${r.resp_ms}</td>${hb?`<td>${E(r.backup||'—')}</td>`:''}<td class="t">${E(r.client_note)}</td></tr>`).join('');
+$('#content').hidden=false;$('#msg').hidden=true}
+fetch('data.json?t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(render).catch(()=>{$('#msg').textContent='Der aktuelle Bericht konnte nicht geladen werden. Bitte Internetverbindung prüfen und die Seite neu laden.'});
+</script></body></html>
